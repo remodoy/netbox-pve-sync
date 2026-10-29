@@ -5,7 +5,8 @@
 ### Fixed
 
 - Allow VM disk sizes in Kilobytes and plain bytes.
-- Skip VM disks with an unknown size format instead of aborting the sync.
+- Skip VM disks without a size or with an unknown size format instead of aborting the sync.
+- Do not sync SCSI CD-ROM drives as VM disks.
 
 ## [0.2.4] - 02/09/2025
 

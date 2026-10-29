@@ -388,11 +388,16 @@ def _process_pve_virtual_machine_disks(
             continue
 
         _disk_definition = _parse_pve_disk_definition(_config_value)
-        _disk_size = _process_pve_disk_size(_disk_definition['size'])
 
-        # Skip disks with an unknown size format instead of aborting the whole sync
+        # CD-ROM drives are not VM disks
+        if _disk_definition.get('media') == 'cdrom':
+            continue
+
+        # Skip disks without a size or with an unknown size format instead of aborting the whole sync
+        _raw_disk_size = _disk_definition.get('size', '')
+        _disk_size = _process_pve_disk_size(_raw_disk_size) if _raw_disk_size else -1
         if _disk_size < 0:
-            print(f'Unknown size {_disk_definition["size"]} for disk {_config_key} '
+            print(f'Unknown size "{_raw_disk_size}" for disk {_config_key} '
                   f'of VM {_nb_virtual_machine.name}. Skipping.')
             continue
 
