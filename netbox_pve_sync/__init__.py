@@ -5,15 +5,15 @@ netbox-pve-sync: Synchronize Proxmox Virtual Environment (PVE) information to a 
 """
 
 import os
+import re
 import sys
 from typing import Optional
 
 import pynetbox
 import urllib3
 from proxmoxer import ProxmoxAPI, ResourceException
-
-import re
 from pynetbox.core.query import RequestError
+
 
 def _load_nb_objects(_nb_api: pynetbox.api) -> dict:
     _nb_objects = {
@@ -117,7 +117,7 @@ def _ensure_tags_exist(_nb_api: pynetbox.api, _nb_objects: dict, _names: list[st
                 slug=_slug,
                 description=f'netbox-pve-sync default tag: {_name}',
             )
-        except RequestError as e:
+        except RequestError:
             # If slug or name exists, fetch it and keep going
             _tag = _nb_api.extras.tags.get(slug=_slug) or _nb_api.extras.tags.get(name=_name)
             if _tag is None:
@@ -267,7 +267,7 @@ def _process_pve_virtual_machine_network_interfaces(
     return _nb_objects
 
 
-def _process_pve_virtual_machine_network_interface(
+def _process_pve_virtual_machine_network_interface(  # pylint: disable=too-many-statements
         _nb_api: pynetbox.api,
         _nb_objects: dict,
         _nb_virtual_machine: any,
@@ -281,11 +281,11 @@ def _process_pve_virtual_machine_network_interface(
         .get(_interface_name)
 
     if nb_virtual_machines_interface is None:
-        payload = dict(
-            virtual_machine=_nb_virtual_machine.id,
-            name=_interface_name,
-            description=_interface_mac_address,
-        )
+        payload = {
+            'virtual_machine': _nb_virtual_machine.id,
+            'name': _interface_name,
+            'description': _interface_mac_address,
+        }
 
         if _nb_objects['default_tag_ids']:
             payload['tags'] = _nb_objects['default_tag_ids']
@@ -339,12 +339,12 @@ def _process_pve_virtual_machine_network_interface(
 
         nb_ip_address = _nb_objects['ip_addresses'].get(_virtual_machine_full_address)
         if nb_ip_address is None:
-            payload = dict(
-                address=_virtual_machine_full_address,
-                assigned_object_type='virtualization.vminterface',
-                assigned_object_id=nb_virtual_machines_interface.id,
-                dns_name=ip_address_dns_name
-            )
+            payload = {
+                'address': _virtual_machine_full_address,
+                'assigned_object_type': 'virtualization.vminterface',
+                'assigned_object_id': nb_virtual_machines_interface.id,
+                'dns_name': ip_address_dns_name,
+            }
             if _nb_objects['default_tag_ids']:
                 payload['tags'] = _nb_objects['default_tag_ids']
             nb_ip_address = _nb_api.ipam.ip_addresses.create(**payload)
@@ -423,14 +423,14 @@ def _process_pve_virtual_machine_disk(
 ) -> dict:
     nb_disk = _nb_objects['disks'].get(_nb_virtual_machine.id, {}).get(_disk_name)
     if nb_disk is None:
-        payload = dict(
-            name=_disk_name,
-            size=_disk_size,
-            virtual_machine=_nb_virtual_machine.id,
-            custom_fields={
+        payload = {
+            'name': _disk_name,
+            'size': _disk_size,
+            'virtual_machine': _nb_virtual_machine.id,
+            'custom_fields': {
                 'backup': _has_backup,
-            }
-        )
+            },
+        }
         if _nb_objects['default_tag_ids']:
             payload['tags'] = _nb_objects['default_tag_ids']
         _nb_api.virtualization.virtual_disks.create(**payload)
