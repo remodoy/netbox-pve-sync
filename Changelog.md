@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Allow VM disk sizes in Kilobytes and plain bytes.
+- Skip VM disks with an unknown size format instead of aborting the sync.
+
 ## [0.2.4] - 02/09/2025
 
 ### Fixed
